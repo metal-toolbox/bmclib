@@ -488,6 +488,7 @@ func newBmcServiceClient(host, port, user, pass string, client *http.Client) *se
 	} else {
 		sc.sum = s
 	}
+	sc.sum = s
 
 	return sc
 }
