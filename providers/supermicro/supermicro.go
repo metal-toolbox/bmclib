@@ -182,7 +182,8 @@ func (c *Client) Open(ctx context.Context) (err error) {
 		return err
 	}
 
-	if !bytes.Contains(body, []byte(`url_redirect.cgi?url_name=topmenu`)) {
+	if !bytes.Contains(body, []byte(`url_redirect.cgi?url_name=mainmenu`)) &&
+		!bytes.Contains(body, []byte(`url_redirect.cgi?url_name=topmenu`)) {
 		return closeWithError(ctx, errors.Wrap(bmclibErrs.ErrLoginFailed, "unexpected response contents"))
 	}
 
@@ -568,7 +569,6 @@ func (c *serviceClient) query(ctx context.Context, endpoint, method string, payl
 		if cookie.Name == "SID" && cookie.Value != "" {
 			req.AddCookie(cookie)
 		}
-
 	}
 
 	var reqDump []byte
