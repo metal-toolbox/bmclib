@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -65,6 +66,7 @@ func main() {
 	}
 
 	cl := bmclib.NewClient(*host, *user, *pass, clientOpts...)
+
 	err := cl.Open(ctx)
 	if err != nil {
 		l.Fatal(err, "bmc login failed")
@@ -84,7 +86,11 @@ func main() {
 		l.Fatal(err)
 	}
 
-	l.Infof("Steps: %+v", steps)
+	sprinted := fmt.Sprintf("%v", steps)
+	trimmed := strings.Trim(sprinted, "[]")
+	replaced := strings.Replace(trimmed, " ", " - ", 0)
+
+	l.Infof("Steps: %s", replaced)
 
 	taskID := ""
 	var lastStep constants.FirmwareInstallStep = ""
@@ -97,11 +103,15 @@ func main() {
 			if err != nil {
 				l.Fatal(err)
 			}
+			// X11 doesnt have a taskID, so lets give it a dummy one
+			if taskID == "" {
+				taskID = "0"
+			}
 		case constants.FirmwareInstallStepInstallStatus:
 			fallthrough
 		case constants.FirmwareInstallStepUploadStatus:
 			if taskID == "" {
-				l.Fatal("taskID wasnt set")
+				l.Warn("taskID wasnt set, continueing anyway")
 			}
 			if lastStep == "" {
 				l.Fatal("lastStep wasnt set")
@@ -112,6 +122,10 @@ func main() {
 			if err != nil {
 				l.Fatal(err)
 			}
+			// X11 doesnt have a taskID, so lets give it a dummy one
+			if taskID == "" {
+				taskID = "0"
+			}
 		case constants.FirmwareInstallStepInstallUploaded:
 			if taskID == "" {
 				l.Fatal("taskID wasnt set")
@@ -119,6 +133,10 @@ func main() {
 			taskID, err = cl.FirmwareInstallUploaded(ctx, *component, taskID)
 			if err != nil {
 				l.Fatal(err)
+			}
+			// X11 doesnt have a taskID, so lets give it a dummy one
+			if taskID == "" {
+				taskID = "0"
 			}
 		case constants.FirmwareInstallStepPowerOffHost:
 			_, err = cl.SetPowerState(ctx, "off")
