@@ -15,6 +15,7 @@ var (
 	ErrBoardIDUnknown       = errors.New("BoardID could not be identified")
 	ErrUnexpectedResponse   = errors.New("Unexpected response content")
 	ErrUnexpectedStatusCode = errors.New("Unexpected status code")
+	ErrUploadTaskIDEmpty    = errors.New("Firmware upload request returned empty firmware upload verify TaskID")
 )
 
 type UnexpectedResponseError struct {
