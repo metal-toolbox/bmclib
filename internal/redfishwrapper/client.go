@@ -25,11 +25,6 @@ var (
 	ErrBIOSID    = errors.New("error identifying System BIOS Odata ID")
 )
 
-var (
-	ErrManagerID = errors.New("error identifying Manager Odata ID")
-	ErrBIOSID    = errors.New("error identifying System BIOS Odata ID")
-)
-
 // Client is a redfishwrapper client which wraps the gofish client.
 type Client struct {
 	host                  string
