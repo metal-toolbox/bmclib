@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-logr/logr"
 	common "github.com/metal-toolbox/bmc-common"
+	commonbmc "github.com/bmc-toolbox/common"
 	"github.com/metal-toolbox/bmclib/constants"
 	bmclibErrs "github.com/metal-toolbox/bmclib/errors"
 	"github.com/pkg/errors"
@@ -99,7 +100,7 @@ func (c *x11) deviceModelFromBoardID(ctx context.Context) (string, error) {
 		return "", ErrBoardIDUnknown
 	}
 
-	model := common.SupermicroModelFromBoardID(boardID)
+	model := commonbmc.SupermicroModelFromBoardID(boardID)
 	if model == "" {
 		return "", errors.Wrap(ErrModelUnknown, "unable to identify model from board ID: "+boardID)
 	}
