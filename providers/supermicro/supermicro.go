@@ -184,7 +184,7 @@ func (c *Client) Open(ctx context.Context) (err error) {
 
 	if !bytes.Contains(body, []byte(`url_redirect.cgi?url_name=mainmenu`)) &&
 		!bytes.Contains(body, []byte(`url_redirect.cgi?url_name=topmenu`)) {
-		return closeWithError(ctx, errors.Wrap(bmclibErrs.ErrLoginFailed, "unexpected response contents"))
+		return closeWithError(ctx, errors.Wrap(bmclibErrs.ErrLoginFailed, "unexpected response contents [[" + string(body[:])+ "]]"))
 	}
 
 	contentsTopMenu, status, err := c.serviceClient.query(ctx, "cgi/url_redirect.cgi?url_name=topmenu", http.MethodGet, nil, nil, 0)
