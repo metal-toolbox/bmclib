@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -14,7 +15,6 @@ import (
 	rfw "github.com/metal-toolbox/bmclib/internal/redfishwrapper"
 	"github.com/pkg/errors"
 	"github.com/stmcginnis/gofish/redfish"
-	"golang.org/x/exp/slices"
 )
 
 type x12 struct {

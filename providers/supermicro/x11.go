@@ -7,15 +7,17 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/go-logr/logr"
 	common "github.com/metal-toolbox/bmc-common"
+	commonbmc "github.com/bmc-toolbox/common"
 	"github.com/metal-toolbox/bmclib/constants"
 	bmclibErrs "github.com/metal-toolbox/bmclib/errors"
 	"github.com/pkg/errors"
+	"github.com/stmcginnis/gofish/oem/smc"
 	"github.com/stmcginnis/gofish/redfish"
-	"golang.org/x/exp/slices"
 )
 
 type x11 struct {
@@ -36,6 +38,23 @@ func (c *x11) deviceModel() string {
 }
 
 func (c *x11) queryDeviceModel(ctx context.Context) (string, error) {
+	model, err := c.deviceModelFromFruInfo(ctx)
+	if err != nil {
+		// Identify BoardID from Redfish since fru info failed to return the information
+		model, err2 := c.deviceModelFromBoardID(ctx)
+		if err2 != nil {
+			return "", errors.Wrap(err, err2.Error())
+		}
+
+		c.model = model
+		return model, nil
+	}
+
+	c.model = model
+	return model, nil
+}
+
+func (c *x11) deviceModelFromFruInfo(ctx context.Context) (string, error) {
 	errBoardPartNumUnknown := errors.New("baseboard part number unknown")
 	data, err := c.fruInfo(ctx)
 	if err != nil {
@@ -47,14 +66,46 @@ func (c *x11) queryDeviceModel(ctx context.Context) (string, error) {
 	}
 
 	partNum := strings.TrimSpace(data.Board.PartNum)
-
 	if data.Board == nil || partNum == "" {
 		return "", errors.Wrap(errBoardPartNumUnknown, "baseboard part number empty")
 	}
 
-	c.model = common.FormatProductName(partNum)
+	return common.FormatProductName(partNum), nil
+}
 
-	return c.model, nil
+func (c *x11) deviceModelFromBoardID(ctx context.Context) (string, error) {
+	if err := c.redfishSession(ctx); err != nil {
+		return "", err
+	}
+
+	chassis, err := c.redfish.Chassis(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	var boardID string
+	for _, ch := range chassis {
+		smcChassis, err := smc.FromChassis(ch)
+		if err != nil {
+			return "", errors.Wrap(ErrBoardIDUnknown, err.Error())
+		}
+
+		if smcChassis.BoardID != "" {
+			boardID = smcChassis.BoardID
+			break
+		}
+	}
+
+	if boardID == "" {
+		return "", ErrBoardIDUnknown
+	}
+
+	model := commonbmc.SupermicroModelFromBoardID(boardID)
+	if model == "" {
+		return "", errors.Wrap(ErrModelUnknown, "unable to identify model from board ID: "+boardID)
+	}
+
+	return model, nil
 }
 
 func (c *x11) fruInfo(ctx context.Context) (*FruInfo, error) {

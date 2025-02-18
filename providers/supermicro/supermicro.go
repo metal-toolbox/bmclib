@@ -136,7 +136,7 @@ func NewClient(host, user, pass string, log logr.Logger, opts ...Option) *Client
 		opt(defaultConfig)
 	}
 
-	serviceClient, err := newBmcServiceClient(
+	serviceClient := newBmcServiceClient(
 		host,
 		defaultConfig.Port,
 		user,
@@ -144,47 +144,66 @@ func NewClient(host, user, pass string, log logr.Logger, opts ...Option) *Client
 		httpclient.Build(defaultConfig.httpClientSetupFuncs...),
 	)
 
-	// We probably want to treat this as a fatal error and/or pass the error back to the caller
-	// I did not want to chase that thread atm, so we intentionally return nil here if
-	// newBmcServiceClient returns an error.
-	if err != nil {
-		return nil
-	}
-
 	return &Client{
 		serviceClient: serviceClient,
 		log:           log,
 	}
 }
 
-// Open a connection to a Supermicro BMC using the vendor API.
-func (c *Client) Open(ctx context.Context) (err error) {
+func (c *Client) login(ctx context.Context, encodeCreds bool) error {
+	var user, pass string
+	if encodeCreds {
+		user = base64.StdEncoding.EncodeToString([]byte(c.serviceClient.user))
+		pass = base64.StdEncoding.EncodeToString([]byte(c.serviceClient.pass))
+	} else {
+		user = c.serviceClient.user
+		pass = c.serviceClient.pass
+	}
+
 	data := fmt.Sprintf(
 		"name=%s&pwd=%s&check=00",
-		base64.StdEncoding.EncodeToString([]byte(c.serviceClient.user)),
-		base64.StdEncoding.EncodeToString([]byte(c.serviceClient.pass)),
+		user,
+		pass,
 	)
 
 	headers := map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
 
 	body, status, err := c.serviceClient.query(ctx, "cgi/login.cgi", http.MethodPost, bytes.NewBufferString(data), headers, 0)
 	if err != nil {
-		return errors.Wrap(bmclibErrs.ErrLoginFailed, err.Error())
+		return err
 	}
 
 	if status != 200 {
-		return errors.Wrap(bmclibErrs.ErrLoginFailed, strconv.Itoa(status))
+		return errors.Wrap(ErrUnexpectedStatusCode, strconv.Itoa(status))
 	}
 
+	// Older Supermicro boards return 200 for failed logins
+	if !bytes.Contains(body, []byte(`url_redirect.cgi?url_name=mainmenu`)) &&
+		!bytes.Contains(body, []byte(`url_redirect.cgi?url_name=topmenu`)) {
+		return ErrUnexpectedResponse
+	}
+
+	return nil
+}
+
+// Open a connection to a Supermicro BMC using the vendor API.
+func (c *Client) Open(ctx context.Context) (err error) {
 	// called after a session was opened but further login dependencies failed
 	closeWithError := func(ctx context.Context, err error) error {
 		_ = c.Close(ctx)
 		return err
 	}
 
-	if !bytes.Contains(body, []byte(`url_redirect.cgi?url_name=mainmenu`)) &&
-		!bytes.Contains(body, []byte(`url_redirect.cgi?url_name=topmenu`)) {
-		return closeWithError(ctx, errors.Wrap(bmclibErrs.ErrLoginFailed, "unexpected response contents"))
+	// first attempt login with base64 encoded user,pass
+	if err := c.login(ctx, true); err != nil {
+		if !errors.Is(err, ErrUnexpectedResponse) && !errors.Is(err, ErrUnexpectedStatusCode) {
+			return closeWithError(ctx, errors.Wrap(bmclibErrs.ErrLoginFailed, err.Error()))
+		}
+
+		// retry with plain text user, pass
+		if err2 := c.login(ctx, false); err2 != nil {
+			return closeWithError(ctx, errors.Wrap(bmclibErrs.ErrLoginFailed, err2.Error()))
+		}
 	}
 
 	contentsTopMenu, status, err := c.serviceClient.query(ctx, "cgi/url_redirect.cgi?url_name=topmenu", http.MethodGet, nil, nil, 0)
@@ -461,20 +480,28 @@ type serviceClient struct {
 	sum       *sum.Sum
 }
 
-func newBmcServiceClient(host, port, user, pass string, client *http.Client) (*serviceClient, error) {
+func newBmcServiceClient(host, port, user, pass string, client *http.Client) *serviceClient {
 	sc := &serviceClient{host: host, port: port, user: user, pass: pass, client: client}
 
 	if !strings.HasPrefix(host, "https://") && !strings.HasPrefix(host, "http://") {
 		sc.host = "https://" + host
 	}
 
+	// sum is only for firmware related operations. Failing the client entirely because of a sum error
+	// means all the other functionality is not available. I don't think that is what we want. So, instead
+	// of failing the function will just set sc.sum to nil. There are checks in place in this package to
+	// handle sc.sum being nil. The tradeoff here is that the reason that sum failed, which from the current
+	// code is only if the `sum` binary is not found, is not returned to the caller. So if firmware operations
+	// are not working, binary not found is the reason.
 	s, err := sum.New(host, user, pass)
 	if err != nil {
-		return nil, err
+		sc.sum = nil
+	} else {
+		sc.sum = s
 	}
 	sc.sum = s
 
-	return sc, nil
+	return sc
 }
 
 func (c *serviceClient) setCsrfToken(t string) {
