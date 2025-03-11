@@ -1,0 +1,5 @@
+Please wait while racadm transfers the file.
+File transferred successfully. Initiating the import operation.
+RAC977: Import configuration XML file operation initiated.
+Use the "racadm jobqueue view -i JID_000000000000" command to view the status
+of the operation.
