@@ -3,6 +3,7 @@ package racadm
 import (
 	"context"
 	"os"
+	"os/exec"
 
 	ex "github.com/metal-toolbox/bmclib/internal/executor"
 
@@ -32,7 +33,7 @@ func WithLogger(log logr.Logger) Option {
 	}
 }
 
-func New(host, user, pass string, opts ...Option) *Racadm {
+func New(host, user, pass string, opts ...Option) (*Racadm, error) {
 	racadm := &Racadm{
 		Host:     host,
 		Username: user,
@@ -44,11 +45,24 @@ func New(host, user, pass string, opts ...Option) *Racadm {
 		opt(racadm)
 	}
 
+	var err error
+
+	if racadm.RacadmPath == "" {
+		racadm.RacadmPath, err = exec.LookPath("racadm")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if _, err = os.Stat(racadm.RacadmPath); err != nil {
+			return nil, err
+		}
+	}
+
 	e := ex.NewExecutor(racadm.RacadmPath)
 	e.SetEnv([]string{"LC_ALL=C.UTF-8"})
 	racadm.Executor = e
 
-	return racadm
+	return racadm, nil
 }
 
 // Open a connection to a BMC
@@ -73,6 +87,9 @@ func (s *Racadm) run(ctx context.Context, command string, additionalArgs ...stri
 	s.Executor.SetArgs(racadmArgs)
 
 	result, err := s.Executor.ExecWithContext(ctx)
+	if result == nil {
+		return "", err
+	}
 	if err != nil {
 		return string(result.Stderr), err
 	}

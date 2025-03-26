@@ -25,7 +25,7 @@ func main() {
 	user := flag.String("user", "", "Username to login with")
 	pass := flag.String("password", "", "Username to login with")
 	host := flag.String("host", "", "BMC hostname to connect to")
-	mode := flag.String("mode", "get", "Mode [get,set,reset]")
+	mode := flag.String("mode", "get", "Mode [get,set,setfile,reset]")
 	dfile := flag.String("file", "", "Read data from file")
 
 	flag.Parse()
