@@ -123,9 +123,14 @@ func New(host, user, pass string, log logr.Logger, opts ...Option) *Conn {
 		rfOpts = append(rfOpts, redfishwrapper.WithSecureTLS(defaultConfig.RootCAs))
 	}
 
+	ra, err := racadm.New(host, user, pass)
+	if err != nil {
+		log.Error(err, "failed to create racadm client")
+	}
+
 	return &Conn{
 		Log:            log,
-		racadm:         racadm.New(host, user, pass),
+		racadm:         ra,
 		redfishwrapper: redfishwrapper.NewClient(host, defaultConfig.Port, user, pass, rfOpts...),
 	}
 }
@@ -238,7 +243,7 @@ func (c *Conn) SetBiosConfiguration(ctx context.Context, biosConfig map[string]s
 
 // SetBiosConfigurationFromFile sets the bios configuration from a raw vendor config file
 func (c *Conn) SetBiosConfigurationFromFile(ctx context.Context, biosConfg string) (err error) {
-	return c.racadm.ChangeBiosCfg(ctx, biosConfg)
+	return c.racadm.SetBiosConfigurationFromFile(ctx, biosConfg)
 }
 
 // ResetBiosConfiguration resets the BIOS configuration settings back to 'factory defaults' via the BMC

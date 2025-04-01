@@ -18,14 +18,14 @@ import (
 )
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
 	// Command line option flag parsing
 	user := flag.String("user", "", "Username to login with")
 	pass := flag.String("password", "", "Username to login with")
 	host := flag.String("host", "", "BMC hostname to connect to")
-	mode := flag.String("mode", "get", "Mode [get,set,reset]")
+	mode := flag.String("mode", "get", "Mode [get,set,setfile,reset]")
 	dfile := flag.String("file", "", "Read data from file")
 
 	flag.Parse()
