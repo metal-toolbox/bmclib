@@ -243,7 +243,7 @@ func (c *Conn) SetBiosConfiguration(ctx context.Context, biosConfig map[string]s
 
 // SetBiosConfigurationFromFile sets the bios configuration from a raw vendor config file
 func (c *Conn) SetBiosConfigurationFromFile(ctx context.Context, biosConfg string) (err error) {
-	return c.racadm.ChangeBiosCfg(ctx, biosConfg)
+	return c.racadm.SetBiosConfigurationFromFile(ctx, biosConfg)
 }
 
 // ResetBiosConfiguration resets the BIOS configuration settings back to 'factory defaults' via the BMC
