@@ -37,6 +37,9 @@ include:
  - racadm: https://www.dell.com/support/manuals/en-us/idrac9-lifecycle-controller-v4.x-series/idrac_4.00.00.00_racadm/introduction?guid=guid-3f6fb670-796a-4724-9d61-ad8a523b7b3e&lang=en-us
  - sum: https://www.supermicro.com/en/solutions/management-software/supermicro-update-manager
 
+## Examples
+[BIOS Configuration Apply](examples/bios/README.md)
+
 ### Usage
 
 The snippet below connects to a BMC and retrieves the device hardware, firmware inventory.
