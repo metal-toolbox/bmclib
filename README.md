@@ -1,3 +1,10 @@
+>📢 This repository has been archived and is no longer maintained.
+>
+>If you wish to continue using or contributing to the open-source version of this project, please visit the actively maintained repository here:
+>👉 [https://github.com/bmc-toolbox/bmclib](https://github.com/bmc-toolbox/bmclib/)
+>
+>Thank you for your interest and support!
+
 # bmclib v2 - board management controller library
 
 [![Status](https://github.com/metal-toolbox/bmclib/actions/workflows/ci.yaml/badge.svg)](https://github.com/metal-toolbox/bmclib/actions)
