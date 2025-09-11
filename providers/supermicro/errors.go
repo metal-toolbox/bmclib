@@ -8,12 +8,14 @@ import (
 )
 
 var (
-	ErrQueryFRUInfo      = errors.New("FRU information query returned error")
-	ErrXMLAPIUnsupported = errors.New("XML API is unsupported")
-	ErrModelUnknown      = errors.New("Model number unknown")
-	ErrModelUnsupported  = errors.New("Model not supported")
-
-	ErrUploadTaskIDEmpty = errors.New("firmware upload request returned empty firmware upload verify TaskID")
+	ErrQueryFRUInfo         = errors.New("FRU information query returned error")
+	ErrXMLAPIUnsupported    = errors.New("XML API is unsupported")
+	ErrModelUnknown         = errors.New("Model number unknown")
+	ErrModelUnsupported     = errors.New("Model not supported")
+	ErrBoardIDUnknown       = errors.New("BoardID could not be identified")
+	ErrUnexpectedResponse   = errors.New("Unexpected response content")
+	ErrUnexpectedStatusCode = errors.New("Unexpected status code")
+	ErrUploadTaskIDEmpty    = errors.New("Firmware upload request returned empty firmware upload verify TaskID")
 )
 
 type UnexpectedResponseError struct {
